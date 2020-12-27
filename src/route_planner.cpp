@@ -10,7 +10,8 @@ RoutePlanner::RoutePlanner(RouteModel &model, float start_x, float start_y, floa
 
     // TODO 2: Use the m_Model.FindClosestNode method to find the closest nodes to the starting and ending coordinates.
     // Store the nodes you find in the RoutePlanner's start_node and end_node attributes.
-
+    start_node = &(m_Model.FindClosestNode(start_x,start_y));
+    end_node = &(m_Model.FindClosestNode(end_x,end_y));
 }
 
 
@@ -20,7 +21,7 @@ RoutePlanner::RoutePlanner(RouteModel &model, float start_x, float start_y, floa
 // - Node objects have a distance method to determine the distance to another node.
 
 float RoutePlanner::CalculateHValue(RouteModel::Node const *node) {
-
+    return(node -> distance(*end_node));
 }
 
 
@@ -32,7 +33,15 @@ float RoutePlanner::CalculateHValue(RouteModel::Node const *node) {
 // - For each node in current_node.neighbors, add the neighbor to open_list and set the node's visited attribute to true.
 
 void RoutePlanner::AddNeighbors(RouteModel::Node *current_node) {
-
+ current_node->FindNeighbors();
+    for(auto *node_neighbor : current_node->neighbors)
+    {
+        node_neighbor ->parent = current_node;//this node object is neighbor node
+        node_neighbor ->h_value = CalculateHValue(node_neighbor);//set the h_value ofneighbour  node
+        node_neighbor ->g_value = node_neighbor ->distance(*start_node);
+        open_list.emplace_back(node_neighbor);
+        node_neighbor ->visited = true;
+    }
 }
 
 
@@ -44,7 +53,12 @@ void RoutePlanner::AddNeighbors(RouteModel::Node *current_node) {
 // - Return the pointer.
 
 RouteModel::Node *RoutePlanner::NextNode() {
-
+std::sort(open_list.begin(),open_list.end(),[](const auto &_1st,const auto &_2nd){
+    return _1st->g_value + _1st->h_value < _2nd->g_value + _2nd->h_value;});
+RouteModel::Node *pointer_to_last;
+pointer_to_last = open_list.back();
+open_list.pop_back();
+return pointer_to_last;
 }
 
 
@@ -56,16 +70,23 @@ RouteModel::Node *RoutePlanner::NextNode() {
 // - The returned vector should be in the correct order: the start node should be the first element
 //   of the vector, the end node should be the last element.
 
-std::vector<RouteModel::Node> RoutePlanner::ConstructFinalPath(RouteModel::Node *current_node) {
+std::vector<RouteModel::Node> RoutePlanner::ConstructFinalPath(RouteModel::Node *last_node) {
+    // Create path_found vector
     // Create path_found vector
     distance = 0.0f;
     std::vector<RouteModel::Node> path_found;
-
+    RouteModel::Node *current_node = last_node;
     // TODO: Implement your solution here.
-
+    while (current_node->parent != nullptr)
+    {
+        path_found.emplace_back(*current_node);
+        distance += current_node->distance(*(current_node->parent));
+        current_node = current_node->parent;
+    }
+    path_found.emplace_back(*current_node);
+    std::reverse(path_found.begin(),path_found.end());
     distance *= m_Model.MetricScale(); // Multiply the distance by the scale of the map to get meters.
     return path_found;
-
 }
 
 
@@ -77,8 +98,23 @@ std::vector<RouteModel::Node> RoutePlanner::ConstructFinalPath(RouteModel::Node 
 // - Store the final path in the m_Model.path attribute before the method exits. This path will then be displayed on the map tile.
 
 void RoutePlanner::AStarSearch() {
-    RouteModel::Node *current_node = nullptr;
-
-    // TODO: Implement your solution here.
-
+    RouteModel::Node *current_node;
+    current_node = start_node;
+    current_node->visited = true;
+    current_node->g_value = 0.0;
+    current_node->h_value = CalculateHValue(current_node);
+    open_list.push_back(current_node);
+    std::cout << '\n' << current_node->x << ' ' << current_node->y << '\n';
+    while (open_list.size() > 0)
+    {
+        current_node = RoutePlanner::NextNode();
+        std::cout << open_list.size() << '\t' << current_node->x << '\t' << current_node->y << '\n';
+        if(current_node == end_node)
+        {
+            m_Model.path = ConstructFinalPath(current_node);
+            return;
+        }
+        RoutePlanner::AddNeighbors(current_node);
+    }
+    std::cout <<  "no path found";
 }
