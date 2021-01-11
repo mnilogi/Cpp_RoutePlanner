@@ -52,12 +52,8 @@ int main(int argc, const char **argv)
             osm_data = std::move(*data);
     }
     
-    // TODO 1: Declare floats `start_x`, `start_y`, `end_x`, and `end_y` and get
-    // user input for these values using std::cin. Pass the user input to the
-    // RoutePlanner object below in place of 10, 10, 90, 90.
-    float start_x,start_y,end_x,end_y;//declare float variables
+    float start_x,start_y,end_x,end_y;/
     
-    //get the user input for start and end points
     std::cout << "\nEnter the start location(x1 and y1):";
     std::cin >> start_x >> start_y;
     std::cout << "Enter the end location(x2 and y2):";
